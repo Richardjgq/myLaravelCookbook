@@ -250,8 +250,154 @@ Route::get('/specail/show', [
 ]);
 ```
 意思就是`show`就成了`/specail/show`这个页面的路由别名，
-```
+```php
 $url = URL::route('show'); //获取页面url
 Redirect::route('show'); //重定向
 ```
 这样就能取到这个页面的连接了。
+
+#### 三、<span id="route-tocontroller">路由到Controller</span>
+
+传送门：[laravel吐槽系列之一](http://www.cnblogs.com/yjf512/p/4031782.html)
+
+这个吐槽里面提到了一点：Laravel没有默认路由。也就是说，不像其他开源框架，
+
+```
+http://domain/_Module_Name_/_controller_name_/_action_name_
+```
+
+这种访问方式，在laravel下面是不会自动解析定位到指定模块的指定controller下面的指定方法的。所有的页面访问，都需要在`routes.php`这个路由文件中进行“登记备案”，才能找到！
+
+so，我们继续，如何在routes中将请求解析给相应的controller？
+
+###### 1.一对一解析指定action
+
+Routes.php
+```php
+Route::get('/test/index', 'TestController@index');
+Route::get('/test/get/{id}', 'TestController@get');
+```
+
+Controllers/TestController.php
+
+```php
+namespace App\Http\Controllers;
+use Illuminate\Routing\Controller as BaseController;
+class TestController extends BaseController
+{
+    public function index()
+    {
+        echo "xxx";
+    }
+    public function get($id = 0)
+    {
+        echo $id;
+    }
+}
+```
+
+*注意：         
+(1)所有Controller必须继承BaseController           
+(2)形如get方法的参数，不设置默认值时为必须参数，设置默认值为可选参数*             
+
+###### 2.对整个Controller一次性解析
+
+如将上方Routes.php改写为如下格式：
+
+```php
+Route::controller('test','TestController');
+```
+此时，不再需要对TestController中的方法逐个解析路由，但是TestController中的方法名字需要做如下改动：
+
+```
+index()     => getIndex()
+get($id=0)  => getGet($id=0)
+```
+
+即将方法名首字母大写之后前面加上HTTP方法名。
+
+此时访问方式不变，不需要加http方法。
+
+#### 四、<span id="route-tocontroller">Controller到view</span>
+
+###### 1. 加载静态页面
+
+当第一个welcome页面出来的时候，我们注意到`route.php`的第一个方法内容是这样的：
+```php
+return view('welcome');
+```
+
+so，view方法，就是渲染页面的方法。参数`welcom`指向的文件是：
+
+>   ~/resources/views/welcome.blade.php
+
+前文文档目录结构提到过，`~/resources/views/` 目录下面存放的是视图模板文件，而这里 `.blade.php` 中的 `blade` 是 Laravel 所提供的一个简单且强大的模板引擎。相较于其它知名的 PHP 模板引擎，Blade 并不会限制说你必须得在视图中使用 PHP 代码。所有 Blade 视图都会被编译缓存成普通的 PHP 代码，一直到它们被更改为止。这代表 Blade 基本不会对你的应用程序生成负担。Blade 视图文件使用 .blade.php 做为扩展名，通常保存于 resources/views 文件夹内。
+
+传送门：[http://laravel-china.org/docs/5.1/blade](http://laravel-china.org/docs/5.1/blade)
+
+这里先介绍一下blade以外的普通页面渲染方式。
+
+一般来说，习惯上对于view文件，我会习惯根据Controller来分组文件夹管理，so，先在 `~/resources/views/` 目录下创建新目录：test， 然后在 `test` 中创建页面文件 `show.php` , 内容随便写点：
+
+>	This is my Controller-view show
+
+在TestController中编写方法：
+
+```php
+public function getShow()
+{
+    return view('test.show');
+}
+```
+
+注意 `view('test.show')` 中的参数特点，以 `.` 作为目录分级的标识符。
+
+然后访问页面：[http://flaravel.com/test/show](http://flaravel.com/test/show)
+
+OK, That's It: 
+
+![test.show-view](./images/shoot4.png)
+
+###### 2. 数据展示：从controller传递数据给view
+
+先来看下view方法的定义：
+
+```php
+function view($view = null, $data = [], $mergeData = [])
+{
+    $factory = app(ViewFactory::class);
+    if (func_num_args() === 0) {
+        return $factory;
+    }
+    return $factory->make($view, $data, $mergeData);
+}
+```
+
+ok，view方法的第二个参数data应该就是要传递给页面上的了，尝试一下：
+
+TestController:
+
+```php
+public function getShow()
+{
+    $data = [
+        'name'  => 'Silov.Yu',
+        'title'    => 'My LaravelCookbook'
+    ];
+    return view('test.show', $data);
+}
+```
+
+~/resources/view/test/show.php 文件内容如下：
+
+```html
+<title>This is my Controller-view show</title>
+<h3>This is A H3</h3>
+<hr>
+
+<label>My Name:</label><?=$name?><br>
+<label>This Project:</label><?=$title?>
+```
+页面如下：
+
+![controller-view-params](./images/shoot5.png)

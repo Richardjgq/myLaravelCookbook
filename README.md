@@ -54,11 +54,13 @@ OK，差不多就是一个半吊子的人写的东西，仅供半吊子的人读
 
 一、框架搭建
 
-* [看到第一个页面](./route.md#route-firstview)
+* [看到第一个页面](./route.md#一第一个laravel页面)
 
-* [简单的路由配置](./route.md)
+* [简单的路由配置](./route.md#二laravel路由的简单应用)
 
-* [路由到Controller](./route.md)
+* [路由到Controller](./route.md#三路由到Controller)
+
+* [Controller到view](./route.md#四Controller到view)
 
 * [Post & \_csrfVerify](./route.md)
 
