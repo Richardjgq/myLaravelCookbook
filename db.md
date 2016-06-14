@@ -265,7 +265,7 @@ $user->save();
 User::where('id', 1)->update(['nickname' => 'newname']);
 ```
 
-#### 二、ORM 提升
+#### 三、ORM 提升
 
 ###### 1.查询自动过滤字段
 

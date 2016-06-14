@@ -66,14 +66,30 @@ OK，差不多就是一个半吊子的人写的东西，仅供半吊子的人读
 
 二、数据库配置 & EloquentORM
 
-* [.env文件 & databse.php](./db.md)
+* [.env文件 & databse.php](./db.md##1-env--databasephp)
 
-* [简单增删查改](./db.md)
+* [创建Model类](./db.md#2创建model)
 
-* [部分高级应用](./db.md)
+* [简单增删查改](./db.md#二eloquent-orm的基本语法)
+
+* [部分高级应用](./db.md#三orm-提升)
 
 三、中间件/拦截器
 
-* [AuthMiddleware](./Middleware.md)
+* AuthMiddleware
 
 四、所谓艺术家：Artisan脚手架
+
+* Artisan基本功能介绍
+
+五、实战偏：一个简易学生信息管理系统
+
+* 学生列表页面
+
+* 新增学生
+
+* 修改学生信息
+
+* 学生科目管理
+
+* 成绩管理
