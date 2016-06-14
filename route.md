@@ -401,3 +401,115 @@ public function getShow()
 页面如下：
 
 ![controller-view-params](./images/shoot5.png)
+
+#### 五、<span id="route-post">Post & _csrfVerify</span>
+
+###### 1.获取 _POST 参数
+
+上文提到，route中的http方法定义。get模式下，可以用形如
+```php
+Route::get('/{id}', function($id){});
+```
+这样的方式来传递参数，但是POST模式下，参数并没有在url中有所体现，而且数量也不可控，这种方式明显不合适。
+
+那么，如何获取POST参数呢？
+
+看下面的代码：
+
+```php
+//TestController
+public function postTable(Illuminate\Http\Request $request)
+{
+	$params = $request->all();
+	var_dump($params);
+}
+```
+
+你没看错，so easy。。。
+
+action方法默认的 `Request` 参数，可以获取所有类型的http参数。
+
+
+###### 2.表单 & _csrf验证
+
+关于CSRF保护，详情可参考 [Laravel-China中文文档](http://laravel-china.org/docs/5.1/routing#csrf-protection)
+
+简单点说，就是系统生成一个csrf的token字段，在表单post数据的时候验证是否合法，以此来达到post数据安全验证的目的。
+
+TestController页面代码：
+
+```php
+    public function getForm()
+    {
+        return view('test.form');
+    }
+```
+
+views/test/form.blade.php:
+
+```html
+<h3>This is A Form</h3>
+<hr>
+<form method="post" action="/test/what">
+    <input type="text" name="name" /><br>
+    <input type="hidden" name="_token" value="<?php echo csrf_token(); ?>">
+    <input type="submit">
+</form>
+```
+
+注意到中间有一行：
+
+```
+    <input type="hidden" name="_token" value="<?php echo csrf_token(); ?>">
+```
+
+整行也可换个写法：
+
+```
+{{csrf_field}}
+```
+
+其中第二种写法，仅限`blade`下。
+
+如此，就给你的代码添加了csrf字段的保护。默认情况下如果不添加这一行，表单提交时会发生如下报错：
+
+![csrf_error](./images/csrf_err.jpg)
+
+加上之后，就正常了，接收的action是上面写的，直接var_dump所有表单数据。
+
+![post](./images/shoot6.jpg)
+
+当然，可能有些请求来自app端或者其他地方，不需要进行csrf验证。这时候有两种方案：
+
+* 全局放弃CSRF验证          
+
+```
+#方案一 app\Http\Kernel.php 注释这一行：
+'App\Http\Middleware\VerifyCsrfToken'
+
+#方案二 app\Http\Middleware\VerifyCsrfToken.php
+public function handle($request, Closure $next)
+{
+    // 使用CSRF
+    //return parent::handle($request, $next);
+    // 禁用CSRF
+    return $next($request);
+}
+```
+
+* 对某些action设置不进行csrf验证
+
+```
+# app\Http\Middleware\VerifyCsrfToken.php
+protected $except = [
+    'stripe/*',
+];
+```
+
+-------
+
+至此，第一部分结束。
+
+借助以上这些，做一些无数据存储功能的简单页面已经可以了。
+
+下一部分，介绍 [数据库相关知识 >>>>](./db.md)
