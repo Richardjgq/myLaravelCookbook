@@ -149,7 +149,7 @@ $data = [
 	'username'	=> 'name',
 	'sex'		=> 'boy'
 ];
-$userId = User::add($data);
+$userId = User::create($data);
 
 # 方法二
 $obj = new User;

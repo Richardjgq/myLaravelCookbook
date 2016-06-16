@@ -64,6 +64,8 @@ OK，差不多就是一个半吊子的人写的东西，仅供半吊子的人读
 
 * [Post & \_csrfVerify](./route.md)
 
+* 表单验证
+
 二、数据库配置 & EloquentORM
 
 * [.env文件 & databse.php](./db.md##1-env--databasephp)
@@ -82,11 +84,15 @@ OK，差不多就是一个半吊子的人写的东西，仅供半吊子的人读
 
 * Artisan基本功能介绍
 
-五、实战偏：一个简易学生信息管理系统
+五、实战篇：一个简易学生信息管理系统
+
+* [新增学生](./student.md#4新增学生页面)
+
+* [数据校验](./student.md#5表单数据校验)
+
+* Layout & 使用bootstrap美化页面
 
 * 学生列表页面
-
-* 新增学生
 
 * 修改学生信息
 
