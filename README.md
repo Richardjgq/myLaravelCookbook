@@ -20,6 +20,9 @@ Laravel 官方号称本框架为：The PHP Framework For Web Artisans -- 为 WEB
 
 OK，差不多就是一个半吊子的人写的东西，仅供半吊子的人读。
 
+PS：半吊子的东西自然也很容易有出错的地方，欢迎一起讨论交流~     
+个人QQ：1136652998
+
 #### 二、关于参考文章
 
 >   * [Laravel中文官网](http://www.golaravel.com/)
@@ -90,9 +93,11 @@ OK，差不多就是一个半吊子的人写的东西，仅供半吊子的人读
 
 * [数据校验](./student.md#5表单数据校验)
 
-* Layout & 使用bootstrap美化页面
+* [Blade模板简介](./student.md#6Blade模板简介)
 
-* 学生列表页面
+* [使用Bootstrap美化页面](./student.md#7使用Bootstrap美化页面)
+
+* [学生列表查询](./student.md#8学生列表查询)
 
 * 修改学生信息
 

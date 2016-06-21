@@ -90,9 +90,9 @@ DB_PASSWORD=root
 CREATE TABLE `fl_students` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'ID as 学号',
   `name` varchar(30) NOT NULL DEFAULT '' COMMENT '姓名',
-  `sex` tinyint(3) NOT NULL DEFAULT 1 COMMENT '性别：1-男，0-女',
-  `age` tinyint(3) NOT NULL DEFAULT 0 COMMENT '年龄',
-  `grade` tinyint(3) NOT NULL DEFAULT 1 COMMENT '年纪',
+  `sex` tinyint(3) NOT NULL DEFAULT 1 COMMENT '性别：1-男，2-女',
+  `birthday` date NOT NULL DEFAULT '0000-00-00' COMMENT '生日',
+  `grade` int(5) NOT NULL DEFAULT 0 COMMENT '入学年份',
   `class` tinyint(3) NOT NULL DEFAULT 1 COMMENT '班级',
   `created_at` int(11) NOT NULL DEFAULT 0 COMMENT '创建时间',
   `updated_at` int(11) NOT NULL DEFAULT 0 COMMENT '更新时间',
