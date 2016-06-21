@@ -696,3 +696,6 @@ PS:小细节，如果 `controller` 中的 `action` 方法是驼峰命名的，�
 function postDeleteManage(){}
 ```
 访问URL：`http://flaravel.me/student/delete-manage` (`post` 表示请求的 `http` 方法，不在 `url` 中体现。
+
+休学处理后，上一步中的学生列表将自动过滤软删除的数据，需要再做一个休学列表，对应恢复处理和休学转退学处理。这里不再赘述，想看的直接查代码~
+
