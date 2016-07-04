@@ -506,6 +506,67 @@ protected $except = [
 ];
 ```
 
+###### 3.表单校验
+
+表单提交的数据，无论前端是否校验，为了安全以及减少代码出错的可能，后端都会再校验一次。
+
+笨一点的方法，把所有数据一条条的接收过来之后逐一判断是否为空、是否是数字或者日期或者字符串格式是否符合某正则表达式等等。
+
+`Laravel` 提供了一个简单化的帮助校验表单的工具 ：`validator`
+
+
+你可以这么写：
+
+```
+Route::post('/try/check', function(Request $request){
+	 $rules = [
+        'name'  => 'required|max:30',
+        'sex'   => 'required|between:1,2',
+        'birthday'  => 'required|date',
+        'grade' => 'required|integer',
+        'class' => 'required|int'
+    ];
+    $messages = [
+        'required'      => '* 不能为空!',
+        'name.max'      => '* 学生姓名长度过大',
+        'sex.between'   => '* 性别填写错误',
+        'birthday.date' => '* 生日格式应为 YYYY-mm-dd',
+        'grade.integer' => '* 年级信息请填写入学年份数字,如:' . date('Y'),
+        'class.integer' => '* 班级信息请填写班级数字'
+    ];
+    $this->validate($request, $rules, $messages);
+    
+    //以下为省略验证通过的执行逻辑
+});
+```
+
+`$rules` ：验证规则，Key为需要验证的字段，value为验证方式，以 `|` 间隔。[可用验证规则列表](http://laravel-china.org/docs/5.1/validation#available-validation-rules)
+
+`$message` : 错误描述，可以为空，laravel提供了一套默认的描述。
+
+**需要注意的是** `validate` 方法验证数据不通过的时候，会直接跳回到提交数据的页面，而不会继续执行上面代码注释中省略的逻辑部分。
+
+
+`validate` 内部执行遇到验证不通过是这么处理的：
+
+```
+if (($request->ajax() && ! $request->pjax()) || $request->wantsJson()) {
+    return new JsonResponse($errors, 422);
+}
+
+return redirect()->to($this->getRedirectUrl())
+                ->withInput($request->input())
+                ->withErrors($errors, $this->errorBag());
+```
+
+即，在ajax模式下，抛出422异常并将错误信息返回
+
+在表单直接submit情况下，返回到原表单页面并withInput、withErrors
+
+对后者的实践和介绍，请参考[实战练习:新增学生部分](./student.md#4新增学生页面)
+
+Ajax 模式下异常信息的反馈，参考 实战练习：账号登录 部分（未发，码字ing）
+
 -------
 
 至此，第一部分结束。

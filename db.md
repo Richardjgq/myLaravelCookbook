@@ -285,3 +285,187 @@ $model = App\Flight::where('legs', '>', 100)->firstOrFail();
 ```
 
 如此，在找不到符合条件的数据时，会抛出 `HTTP 404` 异常给用户
+
+###### 3.关联模型
+
+`EloquentORM` 还依赖其强大的 [查询语句构造器](http://laravel-china.org/docs/5.1/queries) 提供了同样强大的外键查询功能。传送门：[关联查询](http://laravel-china.org/docs/5.1/eloquent-relationships)
+
+设计如下四张表
+
+>|rooms|||students|||subjects|||chooses||
+|:--|:--|:--|:--|:--|:--|:--|:--|:--|:--|:--|
+|字段|意义| - |字段|意义| - | 字段|意义 | - |字段|意义|
+|room_id|宿舍号||student_id|学号||subject_id|科目ID||id|关联ID|
+||||room_id|所属宿舍|||||student_id|选课学生|
+||||||||||subject_id|所选课程|
+
+`rooms` 表，记录宿舍信息, 以 `room_id` 宿舍号为索引            
+`students` 表， 记录学生信息， 以 `student_id` 学号为索引， `room_id` 记录所属宿舍                
+`subjects` 表， 记录课程信息， 以 `subject_id` 课程ID为索引       
+`choosees` 表， 主键ID无意义， 以 `student_id` 和 `subject_id` 关联选课关系
+
+故而：
+
+	Rooms 		(1) ---------------- (n) Students 
+	Students 	(n) ---------------- (n) Subjects
+	
+先做一批测试数据，初始化数据的代码在 `routes.php` 中，`/try/init/`
+
+*	一对一关系：`HasOne` & `BelongsTo` 
+*  一对多关系：`HasMany` & `BelongsTo`
+
+一对一和一对多比较类似，以一对多为例介绍。
+
+Rooms 与 Students 是一对多关系，面上看来，一个 `room` 会 `HasMany` `Students`,反之，每个 `student` 都 `belongsTo` 一个 `Room`
+
+```
+# Model Room
+public function students()
+{
+    return $this->hasMany('App\Models\Student');
+}
+
+# Model Student 
+public function room(){
+    return $this->belongsTo('App\Models\Room');
+}
+```
+	
+`hasMany` 和 `belongsTo` 的参数是相似的，第一个是对应的 `Model`,第二个是外键名称，默认为表名的单数形式(不带前缀)加`_id`。比如此处省略了第二个参数`room_id`。
+
+调用如下：
+
+```
+# routes.php
+Route::get('/try/hasmany', function() {
+    $room = \App\Models\Room::find(3);
+    var_dump($room->students->toArray());
+});
+
+Route::get('/try/belongsto', function() {
+    $data = \App\Models\Student::find(1);
+    var_dump($data->room->toArray());
+});
+```
+
+`belongsTo` 方法，还可以配合 `with` 进行查询：
+
+```
+Route::get('/try/with', function() {
+    $data = \App\Models\Student::with('room')->whereIn('id',[1,2,3])->get();
+    foreach ($data as $v) {
+        var_dump($v->toArray());
+    }
+});
+```
+
+这样打印出来，结果如下：
+
+```
+
+array(11) {
+  ["id"]=>
+  int(1)
+  ["name"]=>
+  string(5) "Silov"
+  ["sex"]=>
+  int(1)
+  ["birthday"]=>
+  string(10) "1999-10-10"
+  ["grade"]=>
+  int(2016)
+  ["class"]=>
+  int(2)
+  ["created_at"]=>
+  string(10) "1465986707"
+  ["updated_at"]=>
+  string(10) "1467603414"
+  ["deleted_at"]=>
+  NULL
+  ["room_id"]=>
+  int(1)
+  ["room"]=>
+  array(3) {
+    ["room_id"]=>
+    int(1)
+    ["created_at"]=>
+    string(10) "1466496573"
+    ["updated_at"]=>
+    string(10) "1466496573"
+  }
+}
+```
+
+
+* 多对多关系，相对复杂，因为还有一个中间关联表
+
+```
+# Model Subject
+public function students()
+{
+    return $this->belongsToMany('App\Models\Student','subject_choose', 'subject_id', 'student_id');
+}
+```
+参数：Model、中间表名（不带前缀）、本表关联字段、对面表关联字段
+
+调用方法：
+
+```
+# routes.php
+Route::get('try/belongstomany', function() {
+    $data = App\Models\Subject::find(1);
+    foreach($data->students as $student){
+        var_dump($student->toArray());
+    }
+});
+```
+
+单次循环打印结果输出如下：
+
+```
+array(11) {
+  ["id"]=>
+  int(1)
+  ["name"]=>
+  string(5) "Silov"
+  ["sex"]=>
+  int(1)
+  ["birthday"]=>
+  string(10) "1999-10-10"
+  ["grade"]=>
+  int(2016)
+  ["class"]=>
+  int(2)
+  ["created_at"]=>
+  string(10) "1465986707"
+  ["updated_at"]=>
+  string(10) "1467603414"
+  ["deleted_at"]=>
+  NULL
+  ["room_id"]=>
+  int(1)
+  ["pivot"]=>
+  array(2) {
+    ["subject_id"]=>
+    int(1)
+    ["student_id"]=>
+    int(1)
+  }
+}
+```
+
+其中最后一个Key：`pivot`, 是关联表 `subject_choose` 的内容。
+
+所以循环中如果想获取中间表的某个数据，比如关联关系建立时间，可以这样：
+
+```
+echo $student->pivot->created_at;
+```
+
+除此之外还有一种[远层一对多](http://laravel-china.org/docs/5.1/eloquent-relationships#%E8%BF%9C%E5%B1%82%E4%B8%80%E5%AF%B9%E5%A4%9A)关系，即比如：
+
+一个 room ---- 多个students --- 跟 student一对一的床位
+
+如果想直接根据宿舍查床位信息，则可以在 `Room` 使用 `hasManyThrough` 方法，通过中间一层表来实现的一对多关系。
+这里不给出具体的方法和代码，详情自行参考官方文档~
+

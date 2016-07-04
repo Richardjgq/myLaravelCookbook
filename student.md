@@ -4,8 +4,6 @@
 
 另外，项目代码在文档中无法全部粘贴，代码已另起一个项目上传，传送门：[laravelCookbookSourcecode](https://github.com/silov/laravelCookbookSourcecode)
 
-#### 一、基础功能
-
 ###### 1. 设计学生信息表
 
 ```sql
@@ -699,3 +697,78 @@ function postDeleteManage(){}
 
 休学处理后，上一步中的学生列表将自动过滤软删除的数据，需要再做一个休学列表，对应恢复处理和休学转退学处理。这里不再赘述，想看的直接查代码~
 
+###### 10.编辑学生信息
+
+编辑的步骤：
+查（数据库查询）看（页面数据显示）编（页面编辑）存（保存修改）
+
+前三步，参考直接看源码
+
+第四步保存
+
+看代码：
+
+```php
+# Controller 
+$params = $request->all();
+//省略：数据校验
+$studentModel = new Student();
+$id = $params['id'];
+unset($params['id']);
+unset($params['_token']);
+$res = $studentModel->updateById($id, $params);
+
+#Model
+public function updateById($id, $columns)
+{
+    try{
+        return $this->where('id', $id)->update($columns);
+    } catch (\Exception $e) {
+        return 0;
+    }
+}
+```
+
+如此，`update` 语法更新数据，结束之后需要反馈给前台一个编辑数据更新成功与否的状态显示出来。
+
+```
+$res = $studentModel->updateById($id, $params);
+$word = $res ? '更新成功!' : '更新失败!';
+return redirect('/student/edit?id=' . $id)->with('update_word', $word);
+```
+
+如此，带着结果跳转到 `edit` 页面。其中，with方法的实现细节是这样的：
+
+```
+public function with($key, $value = null)
+{
+    $key = is_array($key) ? $key : [$key => $value];
+
+    foreach ($key as $k => $v) {
+        $this->session->flash($k, $v);
+    }
+
+    return $this;
+}
+```
+
+即，with中的参数，存在了 `session` 当中。所以，`edit` 方法需要增加逻辑如下：
+
+```
+public function getEdit(Request $request)
+{
+    $id = $request->get('id', 0);
+    if (empty($id)) {
+        return redirect("/student/addv");
+    }
+    $model = new Student();
+    $student = $model->find($id)->toArray();
+    $mes = $request->session()->get('update_word', null);
+    if (!empty($mes)) {
+        $student['update_word'] = $mes;
+    }
+    return view('student.edit', $student);
+}
+```
+
+如此，在页面显示是，即可判断 `update_word` 字段的状态进行更新结果展示。
