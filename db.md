@@ -248,6 +248,11 @@ $total = User::count();
 $sumAge = User::where('key','value')->sum('age');
 $maxAge = User::max('age');
 $minAge = User::min('age');
+
+# 查询类型四：与或条件复杂
+User::where('key','value')->Where(function($query){
+	$query->where('k1','v1')->orWhere('k2','v2');
+})->get();
 ```
 
 这里注意，查出来的结果除了第四项都是int型之外，其他都是 Object 类型的，如需使用数组，则结果继续调用 `->toArray()` 方法即可。但是调用之前必须确保结果非空，否则会报错。
@@ -348,7 +353,7 @@ Route::get('/try/belongsto', function() {
 });
 ```
 
-`belongsTo` 方法，还可以配合 `with` 进行查询：
+`belongsTo` 方法，还可以配合 `with` 进行查询，叫做“预加载”：
 
 ```
 Route::get('/try/with', function() {
@@ -469,3 +474,208 @@ echo $student->pivot->created_at;
 如果想直接根据宿舍查床位信息，则可以在 `Room` 使用 `hasManyThrough` 方法，通过中间一层表来实现的一对多关系。
 这里不给出具体的方法和代码，详情自行参考官方文档~
 
+###### 4.多态关联 
+
+所谓多态关联，简单点理解就是某个外键所对应的表可能不止一个，由另外一个type一类的字段来判断这个外键对应哪张表。
+
+比如：
+
+如果给学生和课程，都加上图片，所有的图片都存在一张表里。
+
+则图片表如下：
+
+>|字段|类型|备注|
+|:--|:--|:--|
+|id|int(11)|图片ID|
+|path|varchar(100)| 图片地址|
+|bind_type|varchar(30)| ModelName,比如：App\Models\Student|
+|bind_id|int(11)|外键：student\_id/subject\_id|
+
+```
+CREATE TABLE `fl_images` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '图片ID',
+  `path` varchar(100) NOT NULL DEFAULT '' COMMENT '图片链接',
+  `bind_type` varchar(30) NOT NULL DEFAULT '' COMMENT 'model name',
+  `bind_id` int(11) NOT NULL DEFAULT '0' COMMENT 'student_id or subject_id',
+  `created_at` int(11) NOT NULL DEFAULT '0' COMMENT '创建时间',
+  `updated_at` int(11) NOT NULL DEFAULT '0' COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='图片';
+```
+
+Model中绑定模型的方法：
+
+```php
+# Model Image
+public function bind()
+{
+    return $this->morphTo();
+}
+# Model Student & Model Subject 
+public function images()
+{
+    return $this->morphMany('App\Models\Image', 'bind');
+}
+```
+
+调用数据的方法类似上文的 `hasMany` 和 `belongsTo`
+
+```php
+# routes.php 
+# 查看某个学生的照片
+Route::get('try/morphto', function() {
+    $student = \App\Models\Student::find(13);
+    foreach($student->images as $image) {
+        var_dump($image->toArray());
+    }
+});
+
+# 查看某张照片的宿主信息，学生/科目
+Route::get('try/bind', function() {
+    $image = \App\Models\Image::find(1);
+    var_dump($image->bind->toArray());
+});
+```
+
+多态多对多关联，比多态关联和多对多关系更复杂一层。具体的例子参考[中文官网文档：多态多对多关系](http://laravel-china.org/docs/5.1/eloquent-relationships#%E5%A4%9A%E6%80%81%E5%A4%9A%E5%AF%B9%E5%A4%9A%E5%85%B3%E8%81%94)
+
+###### 5.关联查询
+
+关联关系可以作为查询条件来查找符合条件的数据。
+
+比如，上文提到宿舍和学生的一对多关系，可以查找哪些宿舍有学生、哪些宿舍学生有几个等等。
+
+```php
+# 获取学生数量不为0的宿舍信息
+$data = \App\Models\Room::has('students')->get();
+# 获取学生数量超过4个的宿舍
+$data = \App\Models\Room::has('students', '>', 4)->get();
+```
+
+或者，可以查询某个学生所在宿舍的信息
+
+```php
+# 获取学生名字叫做 野原新之助 所在的宿舍信息
+$data = \App\Models\Room::whereHas('students', function($query){
+    $query->where('name','野原新之助');
+})->first();
+```
+
+###### 6.预加载
+
+效率&查询次数！非常有用！
+
+举个例子，前面提到过一个 `with` 方法的预加载
+
+```
+# 预加载模式
+Route::get('/try/preload', function() {
+    $data = \App\Models\Student::with('room')->whereIn('id', [1,5,10,16])->get();
+    var_dump($data->toArray());
+    foreach ($data as $v) {
+        var_dump($v->room->toArray());
+    }
+});
+
+# 非预加载模式
+Route::get('/try/unpreload', function() {
+    $data = \App\Models\Student::whereIn('id', [1,5,10,16])->get();
+    var_dump($data->toArray());
+    foreach ($data as $v) {
+        var_dump($v->room->toArray());
+    }
+});
+```
+
+两种方式结果对比可以发现，`foreach` 循环部分输出的内容是一样的，但是循环前面的 `var_dump` 输出的就不一样：预加载方法中，每条数据都多了个 `room` 字段。这就是差别了,两种方法的查询本质是这样的：
+
+```sql
+# 预加载
+select * from fl_students;
+select * from fl_rooms where id in(1,2,3,4);
+
+# 非预加载模式
+select * from fl_students;
+//foreach:
+	select * from fl_room where id=1/2/3/4;
+```
+
+以上可以看出，在这个例子中仅依靠 `belongsTo` 和 `hasOne`/`hasMany` 这类方法实现的关联数据查询，时间复杂度O(n)，而加上预加载之后就变成了 O(1)。而众所周知PHP最大的瓶颈就在Mysql查询，所以预加载有效地减少了查询次数，提高了查询的效率。
+
+预加载还有多种模式，比如：`App\Models\Student` 中同时定义了`room`、`images` 两种关联模型，那么就可以同时预加载两组数据：
+
+```php
+Route::get('/try/preload/students', function() {
+    $data = \App\Models\Student::with('room','images')->get();
+    var_dump($data->toArray());
+});
+```
+
+反过来，查询宿舍信息时，预加载一个宿舍所有人的头像信息，这叫做嵌套预加载：
+
+```
+Route::get('/try/preload/roomimages', function() {
+    $data = \App\Models\Room::with('students.images')->find(1)->toArray();
+    var_dump($data);
+});
+```
+
+输出格式是这样的
+
+```
+[
+	'room_id' 	=> 1,
+	....
+	'students'	=> [//该宿舍学生信息
+		....
+		1	=> [
+			...
+			'images'	=> [
+				//图片信息
+			]
+		]
+		....
+	]
+]
+```
+
+
+预加载也是可以有条件的加载，比如，查询宿舍的时候，预加载某个人的个人信息：
+
+```
+Route::get('/try/preload/search', function() {
+    $data = \App\Models\Room::with(['students' => function($query){
+        $query->where('name', '野原新之助');
+    }])->get()->toArray();
+    var_dump($data);
+});
+```
+
+###### 7.延迟预加载
+
+实际使用的情况可能比较多，比如：预加载的数据不一定有用，不使用预加载的话，循环一次次查询又太耗时。有没有折中的办法？
+
+都说到这里了，肯定是有的，那就是延迟预加载：
+
+比如原来预加载：
+
+```
+$data = \App\Models\Student::with('room','images')->get();
+```
+
+延迟写法：
+
+```
+$data = \App\Models\Student::all();
+if (#判断是否需要预加载数据) {
+    $data->load('room', 'images');
+}
+```
+
+`load` 方法也可以设置预加载条件，如官网文档例子：
+
+```
+$books->load(['author' => function ($query) {
+    $query->orderBy('published_date', 'asc');
+}]);
+```
