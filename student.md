@@ -754,6 +754,8 @@ public function with($key, $value = null)
 
 即，with中的参数，存在了 `session` 当中。所以，`edit` 方法需要增加逻辑如下：
 
+PS这里顺道提一下，Laravel 的 Session 提供了一个flash方法，这种方法存储的值，仅在下次http请求时一次性有效。
+
 ```
 public function getEdit(Request $request)
 {
@@ -772,3 +774,6 @@ public function getEdit(Request $request)
 ```
 
 如此，在页面显示是，即可判断 `update_word` 字段的状态进行更新结果展示。
+
+
+

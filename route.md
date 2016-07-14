@@ -273,6 +273,7 @@ so，我们继续，如何在routes中将请求解析给相应的controller？
 ###### 1.一对一解析指定action
 
 Routes.php
+
 ```php
 Route::get('/test/index', 'TestController@index');
 Route::get('/test/get/{id}', 'TestController@get');
@@ -296,7 +297,7 @@ class TestController extends BaseController
 }
 ```
 
-*注意：         
+**注意：**         
 (1)所有Controller必须继承BaseController           
 (2)形如get方法的参数，不设置默认值时为必须参数，设置默认值为可选参数*             
 
@@ -317,6 +318,18 @@ get($id=0)  => getGet($id=0)
 即将方法名首字母大写之后前面加上HTTP方法名。
 
 此时访问方式不变，不需要加http方法。
+
+###### 3.批量controller解析
+
+```php
+Route::controllers([
+	'test'		=> 'TestController',
+	'student'	=> 'StudentController'
+]);
+```
+
+此方式Controller中的写法同上。
+
 
 #### 四、<span id="route-tocontroller">Controller到view</span>
 
