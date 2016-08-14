@@ -679,3 +679,36 @@ $books->load(['author' => function ($query) {
     $query->orderBy('published_date', 'asc');
 }]);
 ```
+
+###### 8.Scopes查找范围
+
+假设我们有一个文章列表，其中有个 `is_published` 字段，标明文章是否发布。
+
+那么取出已发布的文章是这样的：
+
+```
+Post::where('is_published', true)->get();
+```
+
+其中 `where('is_published',true)` 这个条件，可能在很多查询的时候重复出现。
+
+根据 **Don't Repeat Yourself** 的原则， `Laravel` 提供了一个预设查询范围的方式。
+
+```
+class Post extentds Model
+{
+	public function scopePublished($query)
+	{
+		return $this->where('is_published',true);
+	}
+}
+```
+然后所有需要带着个条件的查询都可以直接使用 `published` 方法：
+
+```
+Post::published()->get();
+```
+
+###### 9.预加载指定字段
+
+
